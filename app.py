@@ -26,6 +26,7 @@ connect_db(app)
 ##############################################################################
 # User signup/login/logout
 
+#TODO: make before request for CSRFProtectForm
 
 @app.before_request
 def add_user_to_g():
@@ -198,20 +199,20 @@ def start_following(follow_id):
 
     Redirect to following page for the current for the current user.
     """
+    form = g.csrf_form
 
-    if not g.user:
+    if not g.user or not form.validate_on_submit():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    form = g.csrf_form
 
-    if form.validate_on_submit():
-        followed_user = User.query.get_or_404(follow_id)
-        g.user.following.append(followed_user)
-        db.session.commit()
+    followed_user = User.query.get_or_404(follow_id)
+    g.user.following.append(followed_user)
+    db.session.commit()
 
     return redirect(f"/users/{g.user.id}/following")
 
+    #TODO: refactor all of the if not g.user or not form.validate_on_submit():
 
 @app.post('/users/stop-following/<int:follow_id>')
 def stop_following(follow_id):
@@ -235,9 +236,9 @@ def stop_following(follow_id):
 
 
 @app.route('/users/profile', methods=["GET", "POST"])
-def profile():
+def edit_profile():
     """Update profile for current user."""
-
+#TODO: UPDATE DOCSTR
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
@@ -249,12 +250,13 @@ def profile():
             g.user.username,
             form.password.data,
         )
+        #  TODO: ADD what happens if user fails to authenticate (flash)
         # TODO: DRY ?
         if user:
             username = form.username.data
             email = form.email.data
-            image_url = form.image_url.data
-            header_image_url = form.header_image_url.data
+            image_url = form.image_url.data or DEFAULT_IMAGE_URL
+            header_image_url = form.header_image_url.data or DEFAULT_HEADER_IMAGE_URL
             bio = form.bio.data
             location = form.location.data
 
@@ -270,6 +272,8 @@ def profile():
             return redirect(f'/users/{g.user.id}')
     else:
         return render_template('users/edit.html', form=form)
+
+
 
 
 @app.post('/users/delete')
@@ -348,6 +352,8 @@ def delete_message(message_id):
 
     form = g.csrf_form
 
+    # TODO: if message.user_id is not g.user id
+
     if form.validate_on_submit():
         msg = Message.query.get_or_404(message_id)
         db.session.delete(msg)
@@ -375,10 +381,15 @@ def homepage():
 
         messages = (Message
                     .query
-                    .filter((Message.user_id in following_ids))
+                    .filter(Message.user_id.in_(following_ids))
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
+
+
+        print(f"following_ids: {following_ids}")
+        print(f"messages: {messages}")
+
 
         return render_template('home.html', messages=messages, form=g.csrf_form)
 

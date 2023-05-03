@@ -50,17 +50,12 @@ class LoginForm(FlaskForm):
 class EditProfileForm(FlaskForm):
     username = StringField(
         'Username',
-        validators=[Optional(), Length(max=30)],
+        validators=[InputRequired(), Length(max=30)],
     )
 
     email = StringField(
         'E-mail',
-        validators=[Optional(), Email(), Length(max=50)]
-    )
-
-    password = PasswordField(
-        'Password',
-        validators=[Optional(), Length(min=6, max=50)]
+        validators=[InputRequired(), Email(), Length(max=50)]
     )
 
     image_url = StringField(
@@ -73,14 +68,16 @@ class EditProfileForm(FlaskForm):
         validators=[Optional(), URL(), Length(max=255)]
     )
 
-    bio = StringField(
-        'Bio',
-        validators=[Optional()],
-    )
+    bio = StringField('Bio')
 
     location = StringField(
         'Location',
         validators=[Optional(), Length(max=255)]
+    )
+
+    password = PasswordField(
+        'Password',
+        validators=[InputRequired(), Length(min=6, max=50)]
     )
 
 
