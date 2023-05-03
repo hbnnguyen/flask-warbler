@@ -47,7 +47,42 @@ class LoginForm(FlaskForm):
     )
 
 
-# class LogoutForm(FlaskForm):
+class EditProfileForm(FlaskForm):
+    username = StringField(
+        'Username',
+        validators=[Optional(), Length(max=30)],
+    )
+
+    email = StringField(
+        'E-mail',
+        validators=[Optional(), Email(), Length(max=50)]
+    )
+
+    password = PasswordField(
+        'Password',
+        validators=[Optional(), Length(min=6, max=50)]
+    )
+
+    image_url = StringField(
+        '(Optional) Image URL',
+        validators=[Optional(), URL(), Length(max=255)]
+    )
+
+    header_image_url = StringField(
+        '(Optional) Header Image URL',
+        validators=[Optional(), URL(), Length(max=255)]
+    )
+
+    bio = StringField(
+        'Bio',
+        validators=[Optional()],
+    )
+
+    location = StringField(
+        'Location',
+        validators=[Optional(), Length(max=255)]
+    )
+
 
 class CSRFProtectForm(FlaskForm):
     """Form just for CSRF Protection"""

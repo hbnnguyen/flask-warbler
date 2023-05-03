@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm
+from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm, EditProfileForm
 from models import db, connect_db, User, Message
 
 load_dotenv()
@@ -203,9 +203,12 @@ def start_following(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    followed_user = User.query.get_or_404(follow_id)
-    g.user.following.append(followed_user)
-    db.session.commit()
+    form = g.csrf_form
+
+    if form.validate_on_submit():
+        followed_user = User.query.get_or_404(follow_id)
+        g.user.following.append(followed_user)
+        db.session.commit()
 
     return redirect(f"/users/{g.user.id}/following")
 
@@ -221,9 +224,12 @@ def stop_following(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    followed_user = User.query.get_or_404(follow_id)
-    g.user.following.remove(followed_user)
-    db.session.commit()
+    form = g.csrf_form
+
+    if form.validate_on_submit():
+        followed_user = User.query.get_or_404(follow_id)
+        g.user.following.remove(followed_user)
+        db.session.commit()
 
     return redirect(f"/users/{g.user.id}/following")
 
@@ -231,7 +237,39 @@ def stop_following(follow_id):
 @app.route('/users/profile', methods=["GET", "POST"])
 def profile():
     """Update profile for current user."""
-    # IMPLEMENT THIS
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    form = EditProfileForm(obj = g.user)
+
+    if form.validate_on_submit():
+        user = User.authenticate(
+            g.user.username,
+            form.password.data,
+        )
+        # TODO: DRY ?
+        if user:
+            username = form.username.data
+            email = form.email.data
+            image_url = form.image_url.data
+            header_image_url = form.header_image_url.data
+            bio = form.bio.data
+            location = form.location.data
+
+            g.user.username = username
+            g.user.email = email
+            g.user.image_url = image_url
+            g.user.header_image_url = header_image_url
+            g.user.bio = bio
+            g.user.location = location
+
+            db.session.commit()
+
+            return redirect(f'/users/{g.user.id}')
+    else:
+        return render_template('users/edit.html', form=form)
 
 
 @app.post('/users/delete')
@@ -245,11 +283,15 @@ def delete_user():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    g.user
-    db.session.delete(g.user)
-    db.session.commit()
+    form = g.csrf_form
 
-    do_logout()
+    if form.validate_on_submit():
+        Message.query.filter_by(user_id=g.user.id).delete()
+
+        db.session.delete(g.user)
+        db.session.commit()
+
+        do_logout()
 
     return redirect("/signup")
 
@@ -289,7 +331,7 @@ def show_message(message_id):
         return redirect("/")
 
     msg = Message.query.get_or_404(message_id)
-    return render_template('messages/show.html', message=msg)
+    return render_template('messages/show.html', message=msg, form=g.csrf_form)
 
 
 @app.post('/messages/<int:message_id>/delete')
@@ -304,9 +346,12 @@ def delete_message(message_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    msg = Message.query.get_or_404(message_id)
-    db.session.delete(msg)
-    db.session.commit()
+    form = g.csrf_form
+
+    if form.validate_on_submit():
+        msg = Message.query.get_or_404(message_id)
+        db.session.delete(msg)
+        db.session.commit()
 
     return redirect(f"/users/{g.user.id}")
 
