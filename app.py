@@ -23,7 +23,6 @@ toolbar = DebugToolbarExtension(app)
 connect_db(app)
 
 
-
 ##############################################################################
 # User signup/login/logout
 
@@ -116,10 +115,15 @@ def login():
 def logout():
     """Handle logout of user and redirect to homepage."""
 
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
     form = g.csrf_form
 
     if form.validate_on_submit():
         do_logout()
+        flash('logged out!')
 
     return redirect("/")
 
@@ -148,7 +152,7 @@ def list_users():
     else:
         users = User.query.filter(User.username.like(f"%{search}%")).all()
 
-    return render_template('users/index.html', users=users)
+    return render_template('users/index.html', users=users, form=g.csrf_form)
 
 
 @app.get('/users/<int:user_id>')
@@ -185,7 +189,7 @@ def show_followers(user_id):
         return redirect("/")
 
     user = User.query.get_or_404(user_id)
-    return render_template('users/followers.html', user=user)
+    return render_template('users/followers.html', user=user, form=g.csrf_form)
 
 
 @app.post('/users/follow/<int:follow_id>')
@@ -227,7 +231,6 @@ def stop_following(follow_id):
 @app.route('/users/profile', methods=["GET", "POST"])
 def profile():
     """Update profile for current user."""
-
     # IMPLEMENT THIS
 
 
@@ -242,10 +245,11 @@ def delete_user():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    do_logout()
-
+    g.user
     db.session.delete(g.user)
     db.session.commit()
+
+    do_logout()
 
     return redirect("/signup")
 
