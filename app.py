@@ -6,7 +6,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
 from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm, EditProfileForm
-from models import db, connect_db, User, Message
+from models import db, connect_db, User, Message, DEFAULT_HEADER_IMAGE_URL, DEFAULT_IMAGE_URL
 
 load_dotenv()
 
@@ -26,8 +26,6 @@ connect_db(app)
 ##############################################################################
 # User signup/login/logout
 
-#TODO: make before request for CSRFProtectForm
-
 @app.before_request
 def add_user_to_g():
     """If we're logged in, add curr user to Flask global."""
@@ -37,6 +35,11 @@ def add_user_to_g():
         g.csrf_form = CSRFProtectForm()
     else:
         g.user = None
+
+
+@app.before_request
+def add_csrf_form_to_g():
+    g.csrf_form = CSRFProtectForm()
 
 
 def do_login(user):
@@ -205,14 +208,14 @@ def start_following(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-
     followed_user = User.query.get_or_404(follow_id)
     g.user.following.append(followed_user)
     db.session.commit()
 
     return redirect(f"/users/{g.user.id}/following")
 
-    #TODO: refactor all of the if not g.user or not form.validate_on_submit():
+    # TODO: refactor all of the if not g.user or not form.validate_on_submit():
+
 
 @app.post('/users/stop-following/<int:follow_id>')
 def stop_following(follow_id):
@@ -221,37 +224,35 @@ def stop_following(follow_id):
     Redirect to following page for the current for the current user.
     """
 
-    if not g.user:
+    form = g.csrf_form
+
+    if not g.user or not form.validate_on_submit():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    form = g.csrf_form
-
-    if form.validate_on_submit():
-        followed_user = User.query.get_or_404(follow_id)
-        g.user.following.remove(followed_user)
-        db.session.commit()
+    followed_user = User.query.get_or_404(follow_id)
+    g.user.following.remove(followed_user)
+    db.session.commit()
 
     return redirect(f"/users/{g.user.id}/following")
 
 
 @app.route('/users/profile', methods=["GET", "POST"])
 def edit_profile():
-    """Update profile for current user."""
-#TODO: UPDATE DOCSTR
+    """Update profile for current user and return to user detail"""
+
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    form = EditProfileForm(obj = g.user)
+    form = EditProfileForm(obj=g.user)
 
     if form.validate_on_submit():
         user = User.authenticate(
             g.user.username,
             form.password.data,
         )
-        #  TODO: ADD what happens if user fails to authenticate (flash)
-        # TODO: DRY ?
+
         if user:
             username = form.username.data
             email = form.email.data
@@ -259,21 +260,21 @@ def edit_profile():
             header_image_url = form.header_image_url.data or DEFAULT_HEADER_IMAGE_URL
             bio = form.bio.data
             location = form.location.data
-
             g.user.username = username
             g.user.email = email
             g.user.image_url = image_url
             g.user.header_image_url = header_image_url
             g.user.bio = bio
             g.user.location = location
-
             db.session.commit()
-
             return redirect(f'/users/{g.user.id}')
+
+        else:
+            flash("Access unauthorized.", "danger")
+            return redirect("/")
+
     else:
         return render_template('users/edit.html', form=form)
-
-
 
 
 @app.post('/users/delete')
@@ -283,19 +284,18 @@ def delete_user():
     Redirect to signup page.
     """
 
-    if not g.user:
+    form = g.csrf_form
+
+    if not g.user or not form.validate_on_submit():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    form = g.csrf_form
+    Message.query.filter_by(user_id=g.user.id).delete()
 
-    if form.validate_on_submit():
-        Message.query.filter_by(user_id=g.user.id).delete()
+    db.session.delete(g.user)
+    db.session.commit()
 
-        db.session.delete(g.user)
-        db.session.commit()
-
-        do_logout()
+    do_logout()
 
     return redirect("/signup")
 
@@ -315,7 +315,7 @@ def add_message():
         return redirect("/")
 
     form = MessageForm()
-
+# TODO: how to refactor this?
     if form.validate_on_submit():
         msg = Message(text=form.text.data)
         g.user.messages.append(msg)
@@ -346,18 +346,20 @@ def delete_message(message_id):
     Redirect to user page on success.
     """
 
-    if not g.user:
+    form = g.csrf_form
+
+    if not g.user or not form.validate_on_submit():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    form = g.csrf_form
+    message = Message.query.get_or_404(message_id)
 
-    # TODO: if message.user_id is not g.user id
+    if g.user.id != message.user_id:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
 
-    if form.validate_on_submit():
-        msg = Message.query.get_or_404(message_id)
-        db.session.delete(msg)
-        db.session.commit()
+    db.session.delete(message)
+    db.session.commit()
 
     return redirect(f"/users/{g.user.id}")
 
@@ -375,7 +377,7 @@ def homepage():
     """
 
     if g.user:
-        #following lines create list of all ID for which to render messages
+        # following lines create list of all ID for which to render messages
         following_ids = [f.id for f in g.user.following]
         following_ids.append(g.user.id)
 
@@ -386,10 +388,8 @@ def homepage():
                     .limit(100)
                     .all())
 
-
         print(f"following_ids: {following_ids}")
         print(f"messages: {messages}")
-
 
         return render_template('home.html', messages=messages, form=g.csrf_form)
 

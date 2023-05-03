@@ -5,8 +5,6 @@
   <div class="row">
 
     {% for follower in user.followers %}
-<!-- TODO: ADD BIO TO USER CARD -->
-
     <div class="col-lg-4 col-md-6 col-12">
       <div class="card user-card">
         <div class="card-inner">
@@ -39,7 +37,7 @@
             {% endif %}
 
           </div>
-          <p class="card-bio">BIO HERE</p>
+          <p class="card-bio">{{follower.bio}}</p>
         </div>
       </div>
     </div>
