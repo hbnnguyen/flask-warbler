@@ -54,12 +54,21 @@
           <a href="/users/{{ msg.user.id }}">@{{ msg.user.username }}</a>
           <span class="text-muted">{{ msg.timestamp.strftime('%d %B %Y') }}</span>
           <p>{{ msg.text }}</p>
-          <form method="POST" action="/messages/{{msg.id}}/like">
-            {{ form.hidden_tag() }}
-            <!--TODO: If message id in like table, conditionally render? -->
-            <!--TODO: update button -->
-            <button type="submit" class="like-btn" ><i class="bi bi-balloon-heart"></i></button>
-          </form>
+
+          {% if msg.user_id == user.id %}
+            <p></p>
+          {% elif msg.id in liked %}
+            <form method="POST" action="/messages/{{msg.id}}/unlike">
+              {{ form.hidden_tag() }}
+              <button type="submit" class="like-btn" ><i class="bi bi-balloon-heart-fill"></i></button>
+            </form>
+          {% else %}
+            <form method="POST" action="/messages/{{msg.id}}/like">
+              {{ form.hidden_tag() }}
+              <button type="submit" class="like-btn" ><i class="bi bi-balloon-heart"></i></button>
+            </form>
+          {% endif %}
+
         </div>
       </li>
       {% endfor %}

@@ -17,11 +17,6 @@
           {{ message.timestamp.strftime('%d %B %Y') }}
         </span>
         <p>{{ message.text }}</p>
-        <form method="POST" action="/messages/{{message.id}}/like">
-          {{ form.hidden_tag() }}
-          <!--TODO: If message id in like table, conditionally render? -->
-          <button type="submit" class="like-btn" ><i class="bi bi-balloon-heart"></i></button>
-        </form>
       </div>
     </li>
 

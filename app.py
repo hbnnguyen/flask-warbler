@@ -254,18 +254,13 @@ def edit_profile():
         )
 
         if user:
-            username = form.username.data
-            email = form.email.data
-            image_url = form.image_url.data or DEFAULT_IMAGE_URL
-            header_image_url = form.header_image_url.data or DEFAULT_HEADER_IMAGE_URL
-            bio = form.bio.data
-            location = form.location.data
-            g.user.username = username
-            g.user.email = email
-            g.user.image_url = image_url
+            g.user.username = form.username.data
+            g.user.email = form.email.data
+            g.user.image_url = form.header_image_url.data or DEFAULT_HEADER_IMAGE_URL
             g.user.header_image_url = header_image_url
-            g.user.bio = bio
-            g.user.location = location
+            g.user.bio = form.bio.data
+            g.user.location = form.location.data
+
             db.session.commit()
             return redirect(f'/users/{g.user.id}')
 
@@ -335,7 +330,14 @@ def show_message(message_id):
         return redirect("/")
 
     msg = Message.query.get_or_404(message_id)
-    return render_template('messages/show.html', user = g.user, message=msg, form=g.csrf_form)
+
+    liked_by_curr_user = [l.message_id for l in g.user.likes]
+
+    return render_template('messages/show.html',
+                            user = g.user,
+                            message=msg,
+                            liked = liked_by_curr_user,
+                            form=g.csrf_form)
 
 
 @app.post('/messages/<int:message_id>/delete')
@@ -367,6 +369,10 @@ def delete_message(message_id):
 @app.post('/messages/<int:message_id>/like')
 def like_message(message_id):
 
+    """
+    likes a message, adds like to database, redirects to homepage
+    """
+
     form = g.csrf_form
 
     if not g.user or not form.validate_on_submit():
@@ -384,6 +390,47 @@ def like_message(message_id):
     return redirect("/")
 
 
+@app.post('/messages/<int:message_id>/unlike')
+def unlike_message(message_id):
+
+    """
+    unlikes a message, deletes like from database, redirects to homepage
+    """
+
+    form = g.csrf_form
+
+    if not g.user or not form.validate_on_submit():
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    like = db.session.query(Like).filter(Like.user_id == g.user.id,
+                                        Like.message_id == message_id).first()
+
+    db.session.delete(like)
+    db.session.commit()
+
+    #account for changing icon -> on home page
+    return redirect("/")
+
+@app.get("/users/<int:user_id>/likes")
+def display_liked_messages(user_id):
+
+    form = g.csrf_form
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    user = User.query.get_or_404(user_id)
+
+    likes = user.likes
+
+    liked_messages = []
+
+    for like in likes:
+        liked_messages.append(Message.query.get(like.message_id))
+
+    return render_template('users/likes.html', messages=liked_messages, user=user, form=form)
 
 ##############################################################################
 # Homepage and error pages
@@ -412,7 +459,13 @@ def homepage():
         print(f"following_ids: {following_ids}")
         print(f"messages: {messages}")
 
-        return render_template('home.html', messages=messages, form=g.csrf_form)
+        liked_by_curr_user = [l.message_id for l in g.user.likes]
+
+        return render_template('home.html',
+                                messages=messages,
+                                liked=liked_by_curr_user,
+                                user=g.user,
+                                form=g.csrf_form)
 
     else:
         return render_template('home-anon.html')
