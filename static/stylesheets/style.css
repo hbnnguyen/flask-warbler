@@ -1,9 +1,4 @@
 /* ====================== General */
-/* TODO:move this */
-.like-btn {
-  position: relative;
-  z-index: 5;
-}
 
 body {
   background-color: #e6ecf0;
@@ -23,6 +18,13 @@ body.error-404 {
 
 .btn:hover {
   cursor: pointer;
+}
+
+.like-btn {
+  position: relative;
+  z-index: 5;
+  border: none;
+  background-color: rgba(0, 0, 0, 0);
 }
 
 /* ======================= Nav */

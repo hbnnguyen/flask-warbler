@@ -182,6 +182,8 @@ class Message(db.Model):
         nullable=False,
     )
 
+    liked_by = db.relationship('User', secondary="likes", backref='liked_messages')
+
 
 
 class Like(db.Model):

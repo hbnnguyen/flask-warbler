@@ -39,6 +39,7 @@ def add_user_to_g():
 
 @app.before_request
 def add_csrf_form_to_g():
+    """add the csrf form to Flask global"""
     g.csrf_form = CSRFProtectForm()
 
 
@@ -200,7 +201,7 @@ def show_followers(user_id):
 def start_following(follow_id):
     """Add a follow for the currently-logged-in user.
 
-    Redirect to following page for the current for the current user.
+    Redirect to following page for the current user.
     """
     form = g.csrf_form
 
@@ -221,7 +222,7 @@ def start_following(follow_id):
 def stop_following(follow_id):
     """Have currently-logged-in-user stop following this user.
 
-    Redirect to following page for the current for the current user.
+    Redirect to following page for the current user.
     """
 
     form = g.csrf_form
@@ -256,8 +257,8 @@ def edit_profile():
         if user:
             g.user.username = form.username.data
             g.user.email = form.email.data
-            g.user.image_url = form.header_image_url.data or DEFAULT_HEADER_IMAGE_URL
-            g.user.header_image_url = header_image_url
+            g.user.image_url = form.image_url.data or DEFAULT_IMAGE_URL
+            g.user.header_image_url = form.header_image_url.data or DEFAULT_HEADER_IMAGE_URL
             g.user.bio = form.bio.data
             g.user.location = form.location.data
 
@@ -274,10 +275,7 @@ def edit_profile():
 
 @app.post('/users/delete')
 def delete_user():
-    """Delete user.
-
-    Redirect to signup page.
-    """
+    """Delete user and redirect to signup page."""
 
     form = g.csrf_form
 
@@ -300,9 +298,11 @@ def delete_user():
 
 @app.route('/messages/new', methods=["GET", "POST"])
 def add_message():
-    """Add a message:
+    """
+    Add a message:
 
-    Show form if GET. If valid, update message and redirect to user page.
+    GET: Show add mesage form
+    POST: If valid, update message and redirect to user page.
     """
 
     if not g.user:
@@ -310,7 +310,8 @@ def add_message():
         return redirect("/")
 
     form = MessageForm()
-# TODO: how to refactor this?
+# TODO: HELP!!!
+# ASK ABOUT THIS
     if form.validate_on_submit():
         msg = Message(text=form.text.data)
         g.user.messages.append(msg)
@@ -330,7 +331,7 @@ def show_message(message_id):
         return redirect("/")
 
     msg = Message.query.get_or_404(message_id)
-
+    #TODO: refactor
     liked_by_curr_user = [l.message_id for l in g.user.likes]
 
     return render_template('messages/show.html',
@@ -382,7 +383,7 @@ def like_message(message_id):
     message = Message.query.get_or_404(message_id)
 
     like = Like(user_id=g.user.id, message_id=message.id)
-
+    #TODO: refactor
     db.session.add(like)
     db.session.commit()
 
@@ -392,7 +393,6 @@ def like_message(message_id):
 
 @app.post('/messages/<int:message_id>/unlike')
 def unlike_message(message_id):
-
     """
     unlikes a message, deletes like from database, redirects to homepage
     """
@@ -405,7 +405,7 @@ def unlike_message(message_id):
 
     like = db.session.query(Like).filter(Like.user_id == g.user.id,
                                         Like.message_id == message_id).first()
-
+    #TODO: refactor
     db.session.delete(like)
     db.session.commit()
 
@@ -414,6 +414,7 @@ def unlike_message(message_id):
 
 @app.get("/users/<int:user_id>/likes")
 def display_liked_messages(user_id):
+    """displays all of the clicked on users liked messages"""
 
     form = g.csrf_form
 
@@ -426,7 +427,7 @@ def display_liked_messages(user_id):
     likes = user.likes
 
     liked_messages = []
-
+    #TODO: refactor
     for like in likes:
         liked_messages.append(Message.query.get(like.message_id))
 
@@ -458,9 +459,9 @@ def homepage():
 
         print(f"following_ids: {following_ids}")
         print(f"messages: {messages}")
-
-        liked_by_curr_user = [l.message_id for l in g.user.likes]
-
+        #TODO: refactor
+        liked_by_curr_user = {liked.message_id for liked in g.user.likes}
+        #TODO: refactor
         return render_template('home.html',
                                 messages=messages,
                                 liked=liked_by_curr_user,

@@ -63,6 +63,7 @@
               <button type="submit" class="like-btn" ><i class="bi bi-balloon-heart-fill"></i></button>
             </form>
           {% else %}
+          <!-- TODO: refactor -->
             <form method="POST" action="/messages/{{msg.id}}/like">
               {{ form.hidden_tag() }}
               <button type="submit" class="like-btn" ><i class="bi bi-balloon-heart"></i></button>
