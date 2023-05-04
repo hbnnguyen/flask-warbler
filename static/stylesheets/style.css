@@ -1,4 +1,9 @@
 /* ====================== General */
+/* TODO:move this */
+.like-btn {
+  position: relative;
+  z-index: 5;
+}
 
 body {
   background-color: #e6ecf0;
