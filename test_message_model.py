@@ -59,6 +59,8 @@ class MessageModelTestCase(TestCase):
         self.assertEqual(len(u1.followers), 0)
 
 # tests
+    def create_message(self):
+        
 
 # create message
 # delete message
