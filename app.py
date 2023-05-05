@@ -170,7 +170,9 @@ def show_user(user_id):
 
     user = User.query.get_or_404(user_id)
 
-    return render_template('users/show.html', user=user, form=g.csrf_form)
+    liked_messages = g.user.liked_messages
+
+    return render_template('users/show.html', user=user, liked=liked_messages, form=g.csrf_form)
 
 
 @app.get('/users/<int:user_id>/following')
@@ -331,13 +333,13 @@ def show_message(message_id):
         return redirect("/")
 
     msg = Message.query.get_or_404(message_id)
-    #TODO: refactor
-    liked_by_curr_user = [l.message_id for l in g.user.likes]
+
+    liked_messages = set(g.user.liked_messages)
 
     return render_template('messages/show.html',
                             user = g.user,
                             message=msg,
-                            liked = liked_by_curr_user,
+                            liked = liked_messages,
                             form=g.csrf_form)
 
 
@@ -383,11 +385,10 @@ def like_message(message_id):
     message = Message.query.get_or_404(message_id)
 
     like = Like(user_id=g.user.id, message_id=message.id)
-    #TODO: refactor
+
     db.session.add(like)
     db.session.commit()
 
-    #account for changing icon -> on home page
     return redirect("/")
 
 
@@ -403,13 +404,11 @@ def unlike_message(message_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    like = db.session.query(Like).filter(Like.user_id == g.user.id,
-                                        Like.message_id == message_id).first()
-    #TODO: refactor
+    like = Like.query.filter_by(user_id=g.user.id, message_id=message_id).first()
+
     db.session.delete(like)
     db.session.commit()
 
-    #account for changing icon -> on home page
     return redirect("/")
 
 @app.get("/users/<int:user_id>/likes")
@@ -424,12 +423,7 @@ def display_liked_messages(user_id):
 
     user = User.query.get_or_404(user_id)
 
-    likes = user.likes
-
-    liked_messages = []
-    #TODO: refactor
-    for like in likes:
-        liked_messages.append(Message.query.get(like.message_id))
+    liked_messages = user.liked_messages
 
     return render_template('users/likes.html', messages=liked_messages, user=user, form=form)
 
@@ -457,11 +451,8 @@ def homepage():
                     .limit(100)
                     .all())
 
-        print(f"following_ids: {following_ids}")
-        print(f"messages: {messages}")
-        #TODO: refactor
         liked_by_curr_user = {liked.message_id for liked in g.user.likes}
-        #TODO: refactor
+
         return render_template('home.html',
                                 messages=messages,
                                 liked=liked_by_curr_user,

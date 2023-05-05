@@ -4,7 +4,6 @@
   <ul class="list-group" id="messages">
 
     {% for message in user.messages %}
-<!-- TODO:add logic for liking/unliking -->
     <li class="list-group-item">
       <a href="/messages/{{ message.id }}" class="message-link"></a>
 
@@ -17,6 +16,21 @@
           {{ message.timestamp.strftime('%d %B %Y') }}
         </span>
         <p>{{ message.text }}</p>
+
+        {% if message.user_id == g.user.id %}
+          <p></p>
+        {% elif message in liked %}
+          <form method="POST" action="/messages/{{message.id}}/unlike">
+            {{ form.hidden_tag() }}
+            <button type="submit" class="like-btn" ><i class="bi bi-balloon-heart-fill"></i></button>
+          </form>
+        {% else %}
+          <form method="POST" action="/messages/{{message.id}}/like">
+            {{ form.hidden_tag() }}
+            <button type="submit" class="like-btn" ><i class="bi bi-balloon-heart"></i></button>
+          </form>
+        {% endif %}
+
       </div>
     </li>
 

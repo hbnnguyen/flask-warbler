@@ -51,8 +51,7 @@
 
           {% if message.user_id == user.id %}
             <p></p>
-          {% elif message.id in liked %}
-          <!-- TODO:refactor -->
+          {% elif message in liked %}
             <form method="POST" action="/messages/{{message.id}}/unlike">
               {{ form.hidden_tag() }}
               <button type="submit" class="like-btn" ><i class="bi bi-balloon-heart-fill"></i></button>
