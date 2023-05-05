@@ -32,19 +32,14 @@ db.create_all()
 class MessageModelTestCase(TestCase):
     def setUp(self):
         User.query.delete()
+        Message.query.delete()
 
         u1 = User.signup("u1", "u1@email.com", "password", None)
         u2 = User.signup("u2", "u2@email.com", "password", None)
 
-        m1 = Message(user_id=u1.id, text='hellooooooo')
-        m2 = Message(user_id=u1.id, text='byeybe')
-
         db.session.commit()
         self.u1_id = u1.id
         self.u2_id = u2.id
-
-        self.m1.user_id = m1.user_id
-        self.m2.user_id = m2.user_id
 
         self.client = app.test_client()
 
@@ -54,15 +49,55 @@ class MessageModelTestCase(TestCase):
     def test_user_model(self):
         u1 = User.query.get(self.u1_id)
 
-        # User should have no messages & no followers
+        # User should have 0 messages & no followers
         self.assertEqual(len(u1.messages), 0)
         self.assertEqual(len(u1.followers), 0)
 
-# tests
-    def create_message(self):
-        
+    def test_create_message(self):
+        """TODO: write me"""
 
-# create message
+        u1 = User.query.get(self.u1_id)
+
+        self.assertEqual(len(u1.messages), 0)
+
+        message = Message(text="wahoo!")
+        u1.messages.append(message)
+        db.session.commit()
+
+        msg_in_db = Message.query.get(message.id)
+        self.assertEqual(msg_in_db.text, "wahoo!")
+
+        self.assertEqual(len(u1.messages), 1)
+
+
+    def test_delete_message(self):
+        """TODO: write me"""
+
+        u1 = User.query.get(self.u1_id)
+
+        self.assertEqual(len(u1.messages), 0)
+
+        message = Message(text="wahoo!")
+        u1.messages.append(message)
+        db.session.commit()
+
+        msg_in_db = Message.query.get(message.id)
+
+        self.assertEqual(msg_in_db.text, "wahoo!")
+        self.assertEqual(len(u1.messages), 1)
+
+        db.session.delete(msg_in_db)
+        db.session.commit()
+
+        deleted_msg = Message.query.get(message.id)
+
+        self.assertIsNone(deleted_msg)
+
+
+
+
+
+
 # delete message
 # like message
 # unlike message

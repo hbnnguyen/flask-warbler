@@ -40,19 +40,21 @@ class UserModelTestCase(TestCase):
         db.session.commit()
 
         # Dont do this
+        # self.u1 = u1
+        # self.u2 = u2
+
         # going to need to query directly because of reference based errors
-        self.u1 = u1
-        self.u2 = u2
 
         self.u1_id = u1.id
-
         self.u2_id = u2.id
 
         self.client = app.test_client()
 
+
     def tearDown(self):
         """break down the testing environment after every test"""
         db.session.rollback()
+
 
     def test_user_model(self):
         """tests creation of user model"""
@@ -62,6 +64,7 @@ class UserModelTestCase(TestCase):
         self.assertEqual(len(u1.messages), 0)
         self.assertEqual(len(u1.followers), 0)
 
+
     def test_successful_user_signup(self):
         """test that user can sign up"""
         u1 = User.signup("testing", "testing@email.com", "password", None)
@@ -69,6 +72,7 @@ class UserModelTestCase(TestCase):
         self.assertEqual(u1.username, "testing")
         self.assertEqual(u1.email, "testing@email.com")
         self.assertTrue(u1.password != "password")
+
 
     def test_unsuccessful_user_signup(self):
         """test uncessful signup attempt"""
@@ -80,36 +84,56 @@ class UserModelTestCase(TestCase):
             username="uncessessful", email="uncessessful")
         self.assertNotIn("uncessessful", users)
 
-    def test_auth(self):
-        """test authenticate class method: positive outcome"""
-        auth_user = User.authenticate(self.u1.username, "password")
-        self.assertEqual(self.u1, auth_user)
 
-    def test_unauth(self):
+    def test_valid_auth(self):
+        """test authenticate class method: positive outcome"""
+
+        u1 = User.query.get(self.u1_id)
+
+        auth_user = User.authenticate(u1.username, "password")
+
+        self.assertEqual(u1, auth_user)
+
+
+    def test_invalid_auth(self):
         """test authenticate class method: negative outcome"""
-        auth_user = User.authenticate(self.u1.username, "notpassword")
+
+        u1 = User.query.get(self.u1_id)
+
+        auth_user = User.authenticate(u1.username, "notpassword")
+
         self.assertEqual(False, auth_user)
+
 
     def test_follow(self):
         """test that users can follow eachother"""
-        followed_user = self.u2
-        self.u1.following.append(followed_user)
+
+        u1 = User.query.get(self.u1_id)
+        u2 = User.query.get(self.u2_id)
+
+        followed_user = u2
+        u1.following.append(followed_user)
         db.session.commit()
 
-        self.assertTrue(self.u1.is_following(self.u2))
-        self.assertTrue(self.u2.is_followed_by(self.u1))
+        self.assertTrue(u1.is_following(u2))
+        self.assertTrue(u2.is_followed_by(u1))
+
 
     def test_unfollow(self):
         """test that users can follow and then unfollow eachother"""
-        followed_user = self.u2
-        self.u1.following.append(followed_user)
+
+        u1 = User.query.get(self.u1_id)
+        u2 = User.query.get(self.u2_id)
+
+        followed_user = u2
+        u1.following.append(followed_user)
         db.session.commit()
 
-        self.assertTrue(self.u1.is_following(self.u2))
-        self.assertTrue(self.u2.is_followed_by(self.u1))
+        self.assertTrue(u1.is_following(u2))
+        self.assertTrue(u2.is_followed_by(u1))
 
-        self.u1.following.remove(followed_user)
+        u1.following.remove(followed_user)
         db.session.commit()
 
-        self.assertFalse(self.u1.is_following(self.u2))
-        self.assertFalse(self.u2.is_followed_by(self.u1))
+        self.assertFalse(u1.is_following(u2))
+        self.assertFalse(u2.is_followed_by(u1))
