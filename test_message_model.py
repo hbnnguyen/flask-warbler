@@ -8,6 +8,7 @@
 from app import app
 import os
 from unittest import TestCase
+from sqlalchemy.exc import IntegrityError
 
 from models import db, User, Message, Follow, Like
 
@@ -31,6 +32,8 @@ db.create_all()
 
 class MessageModelTestCase(TestCase):
     def setUp(self):
+        """set up the testing environment before each test"""
+
         User.query.delete()
         Message.query.delete()
 
@@ -43,15 +46,12 @@ class MessageModelTestCase(TestCase):
 
         self.client = app.test_client()
 
+
     def tearDown(self):
+        """break down the testing environment after every test"""
+
         db.session.rollback()
 
-    def test_user_model(self):
-        u1 = User.query.get(self.u1_id)
-
-        # User should have 0 messages & no followers
-        self.assertEqual(len(u1.messages), 0)
-        self.assertEqual(len(u1.followers), 0)
 
     def test_create_message(self):
         """test creating a message"""
@@ -68,6 +68,7 @@ class MessageModelTestCase(TestCase):
         self.assertEqual(msg_in_db.text, "wahoo!")
 
         self.assertEqual(len(u1.messages), 1)
+
 
     def test_delete_message(self):
         """test deleting a message"""
@@ -92,8 +93,10 @@ class MessageModelTestCase(TestCase):
 
         self.assertIsNone(deleted_msg)
 
+
     def test_like_a_message(self):
         """test liking a message"""
+
         u1 = User.query.get(self.u1_id)
 
         self.assertEqual(len(u1.messages), 0)
@@ -116,8 +119,10 @@ class MessageModelTestCase(TestCase):
 
         self.assertEqual(len(liked_msg.liked_by), 1)
 
+
     def test_unlike_a_message(self):
         """test unliking a previously liked message"""
+
         u1 = User.query.get(self.u1_id)
 
         self.assertEqual(len(u1.messages), 0)
@@ -145,5 +150,33 @@ class MessageModelTestCase(TestCase):
 
         self.assertEqual(len(liked_msg.liked_by), 0)
 
-    #TODO: should not be able to like a currently liked message
-    #TODO: should not be able to unlike message not currently liked
+
+    def test_invalid_like(self):
+        """test liking a previousky liked message"""
+
+        u1 = User.query.get(self.u1_id)
+
+        self.assertEqual(len(u1.messages), 0)
+
+        message = Message(text="wahoo!")
+        u1.messages.append(message)
+        db.session.commit()
+
+        msg_in_db = Message.query.get(message.id)
+
+        self.assertEqual(msg_in_db.text, "wahoo!")
+        self.assertEqual(len(u1.messages), 1)
+
+        like = Like(user_id=u1.id, message_id=msg_in_db.id)
+
+        db.session.add(like)
+        db.session.commit()
+
+        liked_msg = Message.query.get(message.id)
+
+        self.assertEqual(len(liked_msg.liked_by), 1)
+
+        with self.assertRaises(IntegrityError):
+            like = Like(user_id=u1.id, message_id=msg_in_db.id)
+            db.session.add(like)
+            db.session.commit()

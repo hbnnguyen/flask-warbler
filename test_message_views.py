@@ -8,7 +8,9 @@
 import os
 from unittest import TestCase
 
-from models import db, Message, User
+from models import db, Message, User, Like
+
+from flask import jsonify
 
 # BEFORE we import our app, let's set an environmental variable
 # to use a different database for tests (we need to do this
@@ -44,6 +46,7 @@ class MessageBaseViewTestCase(TestCase):
         User.query.delete()
 
         u1 = User.signup("u1", "u1@email.com", "password", None)
+        u2 = User.signup("u2", "u2@email.com", "password", None)
         db.session.flush()
 
         m1 = Message(text="m1-text", user_id=u1.id)
@@ -51,6 +54,8 @@ class MessageBaseViewTestCase(TestCase):
         db.session.commit()
 
         self.u1_id = u1.id
+        self.u2_id = u2.id
+
         self.m1_id = m1.id
 
         self.client = app.test_client()
@@ -58,6 +63,8 @@ class MessageBaseViewTestCase(TestCase):
 
 class MessageAddViewTestCase(MessageBaseViewTestCase):
     def test_add_message(self):
+        """TODO: write me"""
+
         # Since we need to change the session to mimic logging in,
         # we need to use the changing-session trick:
         with self.client as c:
@@ -73,10 +80,74 @@ class MessageAddViewTestCase(MessageBaseViewTestCase):
             Message.query.filter_by(text="Hello").one()
 
 
+    def test_delete_message(self):
+        """TODO: write me"""
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1_id
+
+            resp = c.post(f'/messages/{self.m1_id}/delete')
+
+            self.assertEqual(resp.status_code, 302)
+
+
+    def test_show_message(self):
+        """TODO: write me"""
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1_id
+
+            resp = c.get(f'/messages/{self.m1_id}')
+            html = resp.get_data(as_text=True)
+
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn("TEST FOR SHOW MESSAGE ROUTE", html)
+
+
+    def test_like_message(self):
+        """TODO: write me"""
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u2_id
+
+            resp = c.post(f'/messages/{self.m1_id}/like')
+            html = resp.get_data(as_text=True)
+
+            self.assertEqual(resp.status_code, 302)
+
+            likes = set(Like.query.all())
+
+            self.assertEqual(len(likes), 1)
+
+
+    def test_like_message(self):
+        """TODO: write me"""
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u2_id
+
+            like_resp = c.post(f'/messages/{self.m1_id}/like')
+            html = like_resp.get_data(as_text=True)
+
+            self.assertEqual(like_resp.status_code, 302)
+
+            likes = Like.query.all()
+            self.assertEqual(len(likes), 1)
+
+            unlike_resp = c.post(f'/messages/{self.m1_id}/unlike')
+
+            empty_likes = Like.query.all()
+            self.assertEqual(len(empty_likes), 0)
+
+
+
+
 #POST routes
-# TODO: Delete a message
-# TODO: like a message
-# TODO: unlike a message
+
 #  add message form
 
 
