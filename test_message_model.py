@@ -43,6 +43,9 @@ class MessageModelTestCase(TestCase):
         self.u1_id = u1.id
         self.u2_id = u2.id
 
+        self.m1.user_id = m1.user_id
+        self.m2.user_id = m2.user_id
+
         self.client = app.test_client()
 
     def tearDown(self):
@@ -55,12 +58,10 @@ class MessageModelTestCase(TestCase):
         self.assertEqual(len(u1.messages), 0)
         self.assertEqual(len(u1.followers), 0)
 
-    def test_successful_user_signup(self):
-        u1 = User.signup("testing", "testing@email.com", "password", None)
+# tests
 
-        self.assertEqual(u1.username, "testing")
-        self.assertEqual(u1.email, "testing@email.com")
-        self
-        self.assertTrue(u1.password, )
-
-
+# create message
+# delete message
+# like message
+# unlike message
+# liked_by relationship

@@ -37,7 +37,12 @@ class UserModelTestCase(TestCase):
         u2 = User.signup("u2", "u2@email.com", "password", None)
 
         db.session.commit()
+
+        self.u1 = u1
+
         self.u1_id = u1.id
+
+
         self.u2_id = u2.id
 
         self.client = app.test_client()
@@ -51,3 +56,40 @@ class UserModelTestCase(TestCase):
         # User should have no messages & no followers
         self.assertEqual(len(u1.messages), 0)
         self.assertEqual(len(u1.followers), 0)
+
+
+    def test_successful_user_signup(self):
+        u1 = User.signup("testing", "testing@email.com", "password", None)
+
+        self.assertEqual(u1.username, "testing")
+        self.assertEqual(u1.email, "testing@email.com")
+        self.assertTrue(u1.password != "password")
+
+
+    def test_unsuccessful_user_signup(self):
+        with self.assertRaises(ValueError):
+            User.signup("uncessessful", "uncessessful", "", None)
+            db.session.commit()
+
+        users = User.query.filter_by(username = "uncessessful", email = "uncessessful")
+        self.assertNotIn("uncessessful", users)
+
+    def test_auth(self):
+        auth_user = User.authenticate(self.u1.username, "password")
+
+        # self.assertEqual(self.u1.username, auth_user.username)
+        self.assertEqual(self.u1, auth_user)
+
+    def test_unauth(self):
+
+        auth_user = User.authenticate(self.u1.username, "notpassword")
+
+        # self.assertEqual(self.u1.username, auth_user.username)
+        self.assertEqual(False, auth_user)
+
+
+
+
+#   test follow
+#   test relationship
+#   test follows

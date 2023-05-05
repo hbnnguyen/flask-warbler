@@ -72,15 +72,19 @@ class MessageAddViewTestCase(MessageBaseViewTestCase):
 
             Message.query.filter_by(text="Hello").one()
 
+
 #POST routes
 # TODO: Delete a message
 # TODO: like a message
 # TODO: unlike a message
+#  add message form
 
 
 #GET routes
 # TODO: view a single message when clicked on
 # TODO: users own messages should not have like button
+# display all liked messages
 
+# TODO: do tests for when user is NOT logged in/authorized
 
 
