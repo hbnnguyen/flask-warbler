@@ -71,3 +71,16 @@ class MessageAddViewTestCase(MessageBaseViewTestCase):
             self.assertEqual(resp.status_code, 302)
 
             Message.query.filter_by(text="Hello").one()
+
+#POST routes
+# TODO: Delete a message
+# TODO: like a message
+# TODO: unlike a message
+
+
+#GET routes
+# TODO: view a single message when clicked on
+# TODO: users own messages should not have like button
+
+
+
